@@ -76,7 +76,10 @@ export default async function CoupleSetupPage({
   return (
     <main className="flex min-h-screen flex-1 items-center justify-center px-4 py-12">
       <div className="glass-card w-full max-w-sm p-6">
-        <h1 className="font-heading text-3xl text-foreground">Ton couple</h1>
+        <p className="font-heading text-sm uppercase tracking-[0.3em] text-primary">
+          SportCouple
+        </p>
+        <h1 className="text-gradient mt-1 font-heading text-4xl">Ton couple</h1>
 
         {error ? (
           <p className="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -93,10 +96,7 @@ export default async function CoupleSetupPage({
             <p className="font-numeric text-center text-4xl tracking-[0.3em] text-primary">
               {couple.invite_code}
             </p>
-            <Link
-              href="/repas"
-              className="mt-2 rounded-lg bg-primary px-4 py-2 text-center font-medium text-primary-foreground transition hover:opacity-90"
-            >
+            <Link href="/repas" className="btn-primary mt-2">
               Continuer vers l&apos;application
             </Link>
           </div>
@@ -108,10 +108,7 @@ export default async function CoupleSetupPage({
                 Génère un code à partager avec ton/ta partenaire.
               </p>
               <form action={createCoupleAction} className="mt-3">
-                <button
-                  type="submit"
-                  className="w-full rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90"
-                >
+                <button type="submit" className="btn-primary w-full">
                   Créer mon couple
                 </button>
               </form>
@@ -138,12 +135,9 @@ export default async function CoupleSetupPage({
                   required
                   maxLength={6}
                   placeholder="ABC123"
-                  className="rounded-lg border border-surface-border bg-background px-3 py-2 text-center font-numeric text-lg uppercase tracking-[0.3em] text-foreground outline-none focus:border-primary"
+                  className="input-field text-center font-numeric text-lg uppercase tracking-[0.3em]"
                 />
-                <button
-                  type="submit"
-                  className="rounded-lg border border-surface-border px-4 py-2 font-medium text-foreground transition hover:border-primary"
-                >
+                <button type="submit" className="btn-ghost">
                   Rejoindre
                 </button>
               </form>

@@ -59,8 +59,11 @@ export default async function SignupPage({
 
   return (
     <main className="flex min-h-screen flex-1 items-center justify-center px-4 py-12">
-      <div className="glass-card w-full max-w-sm p-6">
-        <h1 className="font-heading text-3xl text-foreground">
+      <div className="glass-card w-full max-w-sm p-8">
+        <p className="font-heading text-sm uppercase tracking-[0.3em] text-primary">
+          SportCouple
+        </p>
+        <h1 className="text-gradient mt-1 font-heading text-4xl">
           Créer un compte
         </h1>
         <p className="mt-1 text-sm text-muted">
@@ -76,12 +79,7 @@ export default async function SignupPage({
         <form action={signup} className="mt-6 flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">
             Prénom
-            <input
-              type="text"
-              name="first_name"
-              required
-              className="rounded-lg border border-surface-border bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
-            />
+            <input type="text" name="first_name" required className="input-field" />
           </label>
 
           <fieldset className="flex flex-col gap-1 text-sm">
@@ -100,12 +98,7 @@ export default async function SignupPage({
 
           <label className="flex flex-col gap-1 text-sm">
             Date de naissance
-            <input
-              type="date"
-              name="birth_date"
-              required
-              className="rounded-lg border border-surface-border bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
-            />
+            <input type="date" name="birth_date" required className="input-field" />
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
@@ -117,7 +110,7 @@ export default async function SignupPage({
               max={250}
               step="0.1"
               required
-              className="rounded-lg border border-surface-border bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
+              className="input-field"
             />
           </label>
 
@@ -128,7 +121,7 @@ export default async function SignupPage({
               name="email"
               required
               autoComplete="email"
-              className="rounded-lg border border-surface-border bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
+              className="input-field"
             />
           </label>
 
@@ -140,14 +133,11 @@ export default async function SignupPage({
               required
               minLength={6}
               autoComplete="new-password"
-              className="rounded-lg border border-surface-border bg-background px-3 py-2 text-foreground outline-none focus:border-primary"
+              className="input-field"
             />
           </label>
 
-          <button
-            type="submit"
-            className="mt-2 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90"
-          >
+          <button type="submit" className="btn-primary mt-2 w-full">
             Créer mon compte
           </button>
         </form>

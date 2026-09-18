@@ -30,8 +30,13 @@
 }
 
 body {
-  background: radial-gradient(circle at top, #1b1730 0%, var(--background) 55%);
+  background:
+    radial-gradient(circle at 12% -10%, color-mix(in oklab, var(--primary) 35%, transparent), transparent 45%),
+    radial-gradient(circle at 90% 0%, color-mix(in oklab, var(--accent) 28%, transparent), transparent 42%),
+    radial-gradient(circle at 50% 100%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 60%),
+    var(--background);
   color: var(--foreground);
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4 {
@@ -44,13 +49,100 @@ h1, h2, h3, h4 {
   font-variant-numeric: tabular-nums;
 }
 
+.text-gradient {
+  background: linear-gradient(135deg, var(--foreground), var(--primary) 60%, var(--accent));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
 .glass-card {
-  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 78%, transparent);
   border: 1px solid var(--surface-border);
   backdrop-filter: blur(16px);
   border-radius: 1rem;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.glass-card-hover:hover {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--surface-border));
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px -20px color-mix(in oklab, var(--primary) 45%, transparent);
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-primary-foreground transition-all duration-150;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 10px 30px -12px color-mix(in oklab, var(--primary) 60%, transparent);
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  filter: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium transition-all duration-150;
+  border-color: var(--surface-border);
+  color: var(--foreground);
+}
+.btn-ghost:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-danger-ghost {
+  @apply inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors;
+  color: var(--muted);
+}
+.btn-danger-ghost:hover {
+  color: var(--danger);
+}
+
+.input-field {
+  @apply w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none transition-colors;
+  border-color: var(--surface-border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.input-field:focus {
+  border-color: var(--primary);
+}
+
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors;
+  border-color: var(--surface-border);
+  color: var(--muted);
+}
+.chip[data-active="true"] {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

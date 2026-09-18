@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, formatFrenchDate, todayISODate } from "@/lib/date";
-import type { FavoriteFood, MealEntry, MealType } from "@/lib/types/database";
+import type { CommonFood, FavoriteFood, MealEntry, MealType } from "@/lib/types/database";
+import { FoodEntryFields, type FoodSuggestion } from "@/components/repas/FoodEntryFields";
 
 const MEAL_SECTIONS: { code: MealType; label: string }[] = [
   { code: "petit_dejeuner", label: "Petit-déjeuner" },
@@ -104,14 +105,42 @@ export default async function RepasPage({
     });
   }
 
-  let favorites: FavoriteFood[] = [];
-  if (columns.some((c) => c.canEdit)) {
-    const { data } = await supabase
-      .from("favorite_foods")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("name");
-    favorites = data ?? [];
+  const canAddFood = columns.some((c) => c.canEdit);
+  let suggestions: FoodSuggestion[] = [];
+  if (canAddFood) {
+    const [{ data: favorites }, { data: commonFoods }] = await Promise.all([
+      supabase
+        .from("favorite_foods")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("name")
+        .returns<FavoriteFood[]>(),
+      supabase
+        .from("common_foods")
+        .select("*")
+        .order("sort_order")
+        .returns<CommonFood[]>(),
+    ]);
+
+    const byName = new Map<string, FoodSuggestion>();
+    for (const food of commonFoods ?? []) {
+      byName.set(food.name.toLowerCase(), {
+        name: food.name,
+        quantity: food.default_quantity,
+        calories: food.default_calories,
+      });
+    }
+    // Mes propres favoris (historique) priment sur les suggestions génériques.
+    for (const food of favorites ?? []) {
+      byName.set(food.name.toLowerCase(), {
+        name: food.name,
+        quantity: food.default_quantity,
+        calories: food.default_calories,
+      });
+    }
+    suggestions = Array.from(byName.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, "fr"),
+    );
   }
 
   async function addMealEntry(formData: FormData) {
@@ -128,7 +157,6 @@ export default async function RepasPage({
     const name = String(formData.get("name") ?? "").trim();
     const quantity = String(formData.get("quantity") ?? "").trim();
     const caloriesRaw = String(formData.get("calories") ?? "").trim();
-    const saveFavorite = formData.get("save_favorite") === "on";
 
     if (name) {
       const calories = caloriesRaw ? Number(caloriesRaw) : null;
@@ -142,17 +170,17 @@ export default async function RepasPage({
         calories,
       });
 
-      if (saveFavorite) {
-        await supabase.from("favorite_foods").upsert(
-          {
-            user_id: user.id,
-            name,
-            default_quantity: quantity || null,
-            default_calories: calories,
-          },
-          { onConflict: "user_id,name" },
-        );
-      }
+      // Toujours mémoriser l'aliment : la prochaine fois, il est suggéré
+      // avec sa quantité et ses calories déjà remplies.
+      await supabase.from("favorite_foods").upsert(
+        {
+          user_id: user.id,
+          name,
+          default_quantity: quantity || null,
+          default_calories: calories,
+        },
+        { onConflict: "user_id,name" },
+      );
     }
 
     revalidatePath("/repas");
@@ -179,11 +207,11 @@ export default async function RepasPage({
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl text-foreground">Repas</h1>
+        <h1 className="text-gradient font-heading text-3xl">Repas</h1>
         <div className="flex items-center gap-2">
           <Link
             href={`/repas?date=${prevDate}&vue=${vue}`}
-            className="glass-card px-3 py-1.5 text-sm text-foreground"
+            className="glass-card glass-card-hover px-3 py-1.5 text-sm text-foreground"
           >
             ← Veille
           </Link>
@@ -193,7 +221,7 @@ export default async function RepasPage({
           </span>
           <Link
             href={`/repas?date=${nextDate}&vue=${vue}`}
-            className="glass-card px-3 py-1.5 text-sm text-foreground"
+            className="glass-card glass-card-hover px-3 py-1.5 text-sm text-foreground"
           >
             Lendemain →
           </Link>
@@ -224,7 +252,10 @@ export default async function RepasPage({
               </div>
 
               {MEAL_SECTIONS.map((section) => (
-                <div key={section.code} className="glass-card p-4">
+                <div
+                  key={section.code}
+                  className="glass-card glass-card-hover p-4"
+                >
                   <h3 className="font-heading text-lg text-foreground">
                     {section.label}
                   </h3>
@@ -254,7 +285,7 @@ export default async function RepasPage({
                               <input type="hidden" name="vue" value={vue} />
                               <button
                                 type="submit"
-                                className="text-muted hover:text-danger"
+                                className="btn-danger-ghost"
                                 aria-label="Supprimer"
                               >
                                 ✕
@@ -280,43 +311,12 @@ export default async function RepasPage({
                       <input type="hidden" name="vue" value={vue} />
                       <input type="hidden" name="meal_type" value={section.code} />
 
-                      <label className="flex flex-1 basis-32 flex-col gap-1 text-xs text-muted">
-                        Aliment
-                        <input
-                          type="text"
-                          name="name"
-                          list="favorite-foods"
-                          required
-                          className="rounded-lg border border-surface-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label className="flex basis-24 flex-col gap-1 text-xs text-muted">
-                        Quantité
-                        <input
-                          type="text"
-                          name="quantity"
-                          placeholder="150 g"
-                          className="rounded-lg border border-surface-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label className="flex basis-20 flex-col gap-1 text-xs text-muted">
-                        Calories
-                        <input
-                          type="number"
-                          name="calories"
-                          min={0}
-                          step="1"
-                          className="rounded-lg border border-surface-border bg-background px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
-                      <label className="flex items-center gap-1 pb-1.5 text-xs text-muted">
-                        <input type="checkbox" name="save_favorite" />
-                        Favori
-                      </label>
-                      <button
-                        type="submit"
-                        className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-                      >
+                      <FoodEntryFields
+                        suggestions={suggestions}
+                        listId="favorite-foods"
+                      />
+
+                      <button type="submit" className="btn-primary px-4 py-1.5">
                         Ajouter
                       </button>
                     </form>
@@ -329,8 +329,8 @@ export default async function RepasPage({
       )}
 
       <datalist id="favorite-foods">
-        {favorites.map((food) => (
-          <option key={food.id} value={food.name} />
+        {suggestions.map((food) => (
+          <option key={food.name} value={food.name} />
         ))}
       </datalist>
     </div>

@@ -29,6 +29,14 @@ export interface FavoriteFood {
   created_at: string;
 }
 
+export interface CommonFood {
+  id: string;
+  name: string;
+  default_quantity: string | null;
+  default_calories: number | null;
+  sort_order: number;
+}
+
 export interface MealEntry {
   id: string;
   user_id: string;
