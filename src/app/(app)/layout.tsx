@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ViewSelector } from "@/components/layout/ViewSelector";
 
 const NAV_ITEMS = [
   { href: "/repas", label: "Repas", icon: "🍽️" },
@@ -56,6 +57,9 @@ export default async function AppLayout({
             {partner ? ` & ${partner.first_name}` : ""}
           </p>
         </div>
+        <div className="mb-4">
+          <ViewSelector hasPartner={!!partner} />
+        </div>
         <nav className="flex flex-col gap-1">
           {NAV_ITEMS.map((item) => (
             <Link
@@ -78,13 +82,16 @@ export default async function AppLayout({
         </form>
       </aside>
 
-      <header className="flex items-center justify-between border-b border-surface-border p-4 md:hidden">
-        <p className="font-heading text-xl text-foreground">SportCouple</p>
-        <form action={signOut}>
-          <button type="submit" className="text-sm text-muted">
-            Déconnexion
-          </button>
-        </form>
+      <header className="flex flex-col gap-3 border-b border-surface-border p-4 md:hidden">
+        <div className="flex items-center justify-between">
+          <p className="font-heading text-xl text-foreground">SportCouple</p>
+          <form action={signOut}>
+            <button type="submit" className="text-sm text-muted">
+              Déconnexion
+            </button>
+          </form>
+        </div>
+        <ViewSelector hasPartner={!!partner} />
       </header>
 
       <main className="flex-1 pb-20 md:pb-0">{children}</main>
