@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0a14;
+  --surface: #14121f;
+  --surface-border: #262239;
+  --foreground: #f1eefc;
+  --muted: #a39cc2;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --accent: #6366f1;
+  --success: #34d399;
+  --danger: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-numeric: var(--font-numeric);
+}
+
+body {
+  background: radial-gradient(circle at top, #1b1730 0%, var(--background) 55%);
+  color: var(--foreground);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  letter-spacing: 0.01em;
+}
+
+.font-numeric {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-card {
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: blur(16px);
+  border-radius: 1rem;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
