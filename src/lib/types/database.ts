@@ -7,6 +7,7 @@ export interface Profile {
   birth_date: string;
   height_cm: number;
   couple_id: string | null;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }

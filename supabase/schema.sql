@@ -28,6 +28,7 @@ create table public.profiles (
   birth_date date not null,
   height_cm numeric(5, 1) not null check (height_cm > 0 and height_cm < 300),
   couple_id uuid references public.couples (id) on delete set null,
+  is_admin boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -95,6 +96,43 @@ as $$
         and p.couple_id = public.my_couple_id()
     );
 $$;
+
+-- ----------------------------------------------------------------------------
+-- Rôle admin : lecture seule sur toutes les données de tous les couples.
+-- is_admin ne peut être activé que depuis le SQL Editor Supabase (ou avec la
+-- service_role key) — jamais via une requête normale du client, même celle
+-- du propriétaire du compte : voir le trigger ci-dessous.
+-- ----------------------------------------------------------------------------
+
+create or replace function public.is_admin_user()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
+create or replace function public.prevent_self_admin_promotion()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.is_admin is distinct from old.is_admin then
+    if auth.role() <> 'service_role' then
+      new.is_admin := old.is_admin;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger prevent_self_admin_promotion
+  before update on public.profiles
+  for each row execute function public.prevent_self_admin_promotion();
 
 -- ----------------------------------------------------------------------------
 -- Génération de code d'invitation + création / adhésion à un couple.
@@ -192,7 +230,7 @@ alter table public.couples enable row level security;
 
 create policy "couples_select" on public.couples
   for select
-  using (created_by = auth.uid() or id = public.my_couple_id());
+  using (created_by = auth.uid() or id = public.my_couple_id() or public.is_admin_user());
 
 -- Les insert/update passent exclusivement par les fonctions security definer
 -- ci-dessus ; aucune policy insert/update n'est nécessaire côté client.
@@ -205,7 +243,7 @@ alter table public.profiles enable row level security;
 
 create policy "profiles_select_own_or_partner" on public.profiles
   for select
-  using (public.can_view_user_data(id));
+  using (public.can_view_user_data(id) or public.is_admin_user());
 
 create policy "profiles_update_own" on public.profiles
   for update
@@ -247,7 +285,7 @@ create index meal_entries_user_date_idx on public.meal_entries (user_id, entry_d
 alter table public.favorite_foods enable row level security;
 
 create policy "favorite_foods_select" on public.favorite_foods
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "favorite_foods_insert" on public.favorite_foods
   for insert with check (user_id = auth.uid());
 create policy "favorite_foods_update" on public.favorite_foods
@@ -258,7 +296,7 @@ create policy "favorite_foods_delete" on public.favorite_foods
 alter table public.meal_entries enable row level security;
 
 create policy "meal_entries_select" on public.meal_entries
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "meal_entries_insert" on public.meal_entries
   for insert with check (user_id = auth.uid());
 create policy "meal_entries_update" on public.meal_entries
@@ -358,7 +396,7 @@ create policy "measurement_types_select" on public.measurement_types
 alter table public.body_measurements enable row level security;
 
 create policy "body_measurements_select" on public.body_measurements
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "body_measurements_insert" on public.body_measurements
   for insert with check (user_id = auth.uid());
 create policy "body_measurements_update" on public.body_measurements
@@ -387,7 +425,7 @@ create index weight_entries_user_date_idx on public.weight_entries (user_id, mea
 alter table public.weight_entries enable row level security;
 
 create policy "weight_entries_select" on public.weight_entries
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "weight_entries_insert" on public.weight_entries
   for insert with check (user_id = auth.uid());
 create policy "weight_entries_update" on public.weight_entries
@@ -448,7 +486,7 @@ create policy "exercises_select" on public.exercises
 alter table public.workout_logs enable row level security;
 
 create policy "workout_logs_select" on public.workout_logs
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "workout_logs_insert" on public.workout_logs
   for insert with check (user_id = auth.uid());
 create policy "workout_logs_delete" on public.workout_logs
@@ -473,7 +511,7 @@ create index daily_steps_user_date_idx on public.daily_steps (user_id, recorded_
 alter table public.daily_steps enable row level security;
 
 create policy "daily_steps_select" on public.daily_steps
-  for select using (public.can_view_user_data(user_id));
+  for select using (public.can_view_user_data(user_id) or public.is_admin_user());
 create policy "daily_steps_insert" on public.daily_steps
   for insert with check (user_id = auth.uid());
 create policy "daily_steps_update" on public.daily_steps

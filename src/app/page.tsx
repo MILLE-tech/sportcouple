@@ -13,9 +13,13 @@ export default async function HomePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("couple_id")
+    .select("couple_id, is_admin")
     .eq("id", user.id)
     .single();
+
+  if (profile?.is_admin) {
+    redirect("/admin");
+  }
 
   if (!profile?.couple_id) {
     redirect("/couple-setup");
