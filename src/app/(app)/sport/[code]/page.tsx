@@ -9,7 +9,7 @@ import type {
   WorkoutSessionType,
 } from "@/lib/types/database";
 
-const VALID_CODES: SessionCode[] = ["A", "B", "C"];
+const VALID_CODES: SessionCode[] = ["A", "B", "C", "D"];
 
 export default async function SessionPage({
   params,

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, startOfISOWeek, todayISODate } from "@/lib/date";
 import type {
+  DailyStep,
   ExerciseVariant,
   WorkoutLog,
   WorkoutSessionType,
@@ -14,6 +16,8 @@ type Column = {
   canEdit: boolean;
   weekCount: number;
   history: WorkoutLog[];
+  steps: DailyStep[];
+  todaySteps: DailyStep | null;
 };
 
 export default async function SportPage({
@@ -77,6 +81,7 @@ export default async function SportPage({
 
   const monday = startOfISOWeek(todayISODate());
   const sunday = addDaysISO(monday, 6);
+  const today = todayISODate();
 
   const columns: Column[] = [];
   for (const target of targets) {
@@ -95,13 +100,51 @@ export default async function SportPage({
       .gte("performed_on", monday)
       .lte("performed_on", sunday);
 
+    const { data: steps } = await supabase
+      .from("daily_steps")
+      .select("*")
+      .eq("user_id", target.id)
+      .order("recorded_on", { ascending: false })
+      .limit(7)
+      .returns<DailyStep[]>();
+
     columns.push({
       userId: target.id,
       label: target.label,
       canEdit: target.canEdit,
       weekCount: count ?? 0,
       history: history ?? [],
+      steps: steps ?? [],
+      todaySteps: (steps ?? []).find((s) => s.recorded_on === today) ?? null,
     });
+  }
+
+  async function saveSteps(formData: FormData) {
+    "use server";
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+
+    const vueValue = String(formData.get("vue"));
+    const recordedOn = String(formData.get("recorded_on") || todayISODate());
+    const stepsRaw = String(formData.get("steps") ?? "").trim();
+    const steps = Number(stepsRaw);
+
+    if (stepsRaw && Number.isFinite(steps) && steps >= 0) {
+      await supabase.from("daily_steps").upsert(
+        {
+          user_id: user.id,
+          recorded_on: recordedOn,
+          steps,
+        },
+        { onConflict: "user_id,recorded_on" },
+      );
+    }
+
+    revalidatePath("/sport");
+    redirect(`/sport?vue=${vueValue}&variant=${variant}`);
   }
 
   return (
@@ -154,7 +197,7 @@ export default async function SportPage({
               </div>
 
               {column.canEdit ? (
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {(sessionTypes ?? []).map((s) => (
                     <Link
                       key={s.code}
@@ -162,7 +205,7 @@ export default async function SportPage({
                       className="glass-card glass-card-hover flex flex-col gap-1 p-4"
                     >
                       <span className="font-heading text-lg text-foreground">
-                        Séance {s.code}
+                        {s.code === "D" ? "Séance Bonus" : `Séance ${s.code}`}
                       </span>
                       <span className="text-xs text-muted">{s.focus}</span>
                       <span className="btn-primary mt-3 justify-center text-xs">
@@ -186,12 +229,71 @@ export default async function SportPage({
                     {column.history.map((log) => (
                       <li key={log.id} className="flex items-center justify-between">
                         <span>
-                          {log.performed_on} · Séance {log.session_code}
+                          {log.performed_on} ·{" "}
+                          {log.session_code === "D"
+                            ? "Séance Bonus"
+                            : `Séance ${log.session_code}`}
                         </span>
                         <span className="text-xs">
                           {log.variant === "avec_halteres"
                             ? "Avec haltères"
                             : "Sans haltères"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="glass-card p-4">
+                <h3 className="font-heading text-base text-foreground">
+                  Pas quotidiens
+                </h3>
+
+                {column.canEdit ? (
+                  <form
+                    action={saveSteps}
+                    className="mt-2 flex flex-wrap items-end gap-3"
+                  >
+                    <input type="hidden" name="vue" value={vue} />
+                    <label className="flex flex-col gap-1 text-xs text-muted">
+                      Date
+                      <input
+                        type="date"
+                        name="recorded_on"
+                        defaultValue={today}
+                        className="input-field py-1.5"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs text-muted">
+                      Pas
+                      <input
+                        type="number"
+                        name="steps"
+                        min={0}
+                        step="1"
+                        required
+                        defaultValue={column.todaySteps?.steps ?? ""}
+                        className="input-field py-1.5"
+                      />
+                    </label>
+                    <button type="submit" className="btn-primary px-4 py-1.5 text-sm">
+                      {column.todaySteps ? "Mettre à jour" : "Enregistrer"}
+                    </button>
+                  </form>
+                ) : null}
+
+                {column.steps.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted">
+                    Aucun pas enregistré pour l&apos;instant.
+                  </p>
+                ) : (
+                  <ul className="mt-2 flex flex-col gap-1 text-sm text-muted">
+                    {column.steps.map((s) => (
+                      <li key={s.id} className="flex items-center justify-between">
+                        <span>{s.recorded_on}</span>
+                        <span className="font-numeric text-foreground">
+                          {s.steps.toLocaleString("fr-FR")} pas
                         </span>
                       </li>
                     ))}

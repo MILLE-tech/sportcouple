@@ -87,7 +87,7 @@ export interface WeightEntry {
 }
 
 export type ExerciseVariant = "sans_halteres" | "avec_halteres";
-export type SessionCode = "A" | "B" | "C";
+export type SessionCode = "A" | "B" | "C" | "D";
 
 export interface WorkoutSessionType {
   code: SessionCode;
@@ -118,4 +118,13 @@ export interface WorkoutLog {
   variant: ExerciseVariant;
   performed_on: string;
   created_at: string;
+}
+
+export interface DailyStep {
+  id: string;
+  user_id: string;
+  recorded_on: string;
+  steps: number;
+  created_at: string;
+  updated_at: string;
 }

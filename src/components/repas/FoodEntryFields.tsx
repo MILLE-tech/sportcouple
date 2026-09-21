@@ -8,6 +8,8 @@ export type FoodSuggestion = {
   calories: number | null;
 };
 
+const QUICK_UNITS = ["g", "c. à café", "c. à soupe", "ml", "pièce"];
+
 export function FoodEntryFields({
   suggestions,
   listId,
@@ -30,6 +32,11 @@ export function FoodEntryFields({
     }
   }
 
+  function applyUnit(unit: string) {
+    const leadingNumber = quantity.match(/^(\d+(?:[.,]\d+)?)/)?.[1] ?? "1";
+    setQuantity(`${leadingNumber} ${unit}`);
+  }
+
   return (
     <>
       <label className="flex flex-1 basis-32 flex-col gap-1 text-xs text-muted">
@@ -45,7 +52,7 @@ export function FoodEntryFields({
           className="input-field py-1.5"
         />
       </label>
-      <label className="flex basis-24 flex-col gap-1 text-xs text-muted">
+      <label className="flex basis-32 flex-col gap-1 text-xs text-muted">
         Quantité
         <input
           type="text"
@@ -55,6 +62,18 @@ export function FoodEntryFields({
           onChange={(e) => setQuantity(e.target.value)}
           className="input-field py-1.5"
         />
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {QUICK_UNITS.map((unit) => (
+            <button
+              key={unit}
+              type="button"
+              onClick={() => applyUnit(unit)}
+              className="chip px-2 py-0.5 text-[10px]"
+            >
+              {unit}
+            </button>
+          ))}
+        </div>
       </label>
       <label className="flex basis-20 flex-col gap-1 text-xs text-muted">
         Calories
