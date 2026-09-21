@@ -12,8 +12,21 @@ export default async function LoginPage({
   async function login(formData: FormData) {
     "use server";
 
-    const email = String(formData.get("email") ?? "").trim();
-    const password = String(formData.get("password") ?? "");
+    let email = String(formData.get("email") ?? "").trim();
+    let password = String(formData.get("password") ?? "");
+
+    // Raccourci "admin" / "admin" : substitue le vrai compte admin (créé
+    // une fois via /signup, marqué is_admin en base) sans jamais exposer
+    // son email réel dans le formulaire.
+    if (
+      email.toLowerCase() === "admin" &&
+      password === "admin" &&
+      process.env.ADMIN_SHORTCUT_EMAIL &&
+      process.env.ADMIN_SHORTCUT_PASSWORD
+    ) {
+      email = process.env.ADMIN_SHORTCUT_EMAIL;
+      password = process.env.ADMIN_SHORTCUT_PASSWORD;
+    }
 
     const supabase = await createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -59,7 +72,7 @@ export default async function LoginPage({
           <label className="flex flex-col gap-1 text-sm">
             Email
             <input
-              type="email"
+              type="text"
               name="email"
               required
               autoComplete="email"
