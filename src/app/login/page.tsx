@@ -2,6 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+// Identifiant technique fixe du compte admin (pas un secret : voir
+// supabase/migrations/0005_admin_account_seed.sql). Jamais affiché ni
+// demandé dans l'appli.
+const ADMIN_ACCOUNT_EMAIL = "admin@sportcouple.internal";
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -16,15 +21,14 @@ export default async function LoginPage({
     let password = String(formData.get("password") ?? "");
 
     // Raccourci "admin" / "admin" : substitue le vrai compte admin (créé
-    // une fois via /signup, marqué is_admin en base) sans jamais exposer
-    // son email réel dans le formulaire.
+    // directement en base, voir migration 0005) sans jamais afficher ni
+    // demander d'email dans le formulaire.
     if (
       email.toLowerCase() === "admin" &&
       password === "admin" &&
-      process.env.ADMIN_SHORTCUT_EMAIL &&
       process.env.ADMIN_SHORTCUT_PASSWORD
     ) {
-      email = process.env.ADMIN_SHORTCUT_EMAIL;
+      email = ADMIN_ACCOUNT_EMAIL;
       password = process.env.ADMIN_SHORTCUT_PASSWORD;
     }
 
